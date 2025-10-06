@@ -11,11 +11,6 @@ class GetCurrentLocationEvent extends MapEvent {
   List<Object?> get props => [];
 }
 
-class GetDistanceEvent extends MapEvent {
-  @override
-  List<Object?> get props => [];
-}
-
 class SelectPointsEvent extends MapEvent {
   final LatLng? startPoint;
   final LatLng? endPoint;

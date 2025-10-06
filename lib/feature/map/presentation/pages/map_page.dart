@@ -5,7 +5,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:task2/core/constants/app_dimensions.dart';
 import 'package:task2/core/constants/app_values.dart';
 import 'package:task2/feature/map/data/model/address_model.dart';
-import 'package:task2/feature/map/data/model/driver_model.dart';
 import 'package:task2/feature/map/presentation/manager/status/get_address_status.dart';
 import 'package:task2/feature/map/presentation/manager/status/get_path_status.dart';
 import 'package:task2/feature/map/presentation/manager/status/search_address_status.dart';
@@ -17,6 +16,7 @@ import '../manager/map_bloc.dart';
 import '../manager/map_event.dart';
 import '../manager/map_state.dart';
 import '../manager/status/map_status.dart';
+import '../widget/map_widget.dart';
 import '../widget/search_widget.dart';
 
 class MapPage extends StatefulWidget {
@@ -67,7 +67,13 @@ class _MapPageState extends State<MapPage> {
 
       return Stack(
         children: [
-          _map(state),
+          MapWidget(
+            mapController: mapController,
+            startPoint: startPoint,
+            endPoint: endPoint,
+            routePoints: routePoints,
+            currentLocation: currentLocation,
+          ),
           Positioned(
             bottom: 20,
             left: 20,
@@ -206,11 +212,7 @@ class _MapPageState extends State<MapPage> {
         padding: const EdgeInsets.symmetric(vertical: 14),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
-      onPressed: () {
-        if (startPoint == null && endPoint == null) {
-          // startSelectingPoints();
-        } else {}
-      },
+      onPressed: () {},
       child: startPoint == null
           ? Text('Select Source')
           : (endPoint == null && startPoint != null)
@@ -306,7 +308,7 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  Padding _tripInfoDialog(BuildContext context) {
+  Widget _tripInfoDialog(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
@@ -385,7 +387,7 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  Container _tripInfo(double distance, double fare) {
+  Widget _tripInfo(double distance, double fare) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -408,100 +410,6 @@ class _MapPageState extends State<MapPage> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _map(MapState state) {
-    return BlocBuilder<MapBloc, MapState>(
-      builder: (context, state) {
-        List<DriverModel> drivers = [];
-        if (state.selectPointsStatus is SelectPointsStatus) {
-          var status = state.selectPointsStatus as SelectPointsStatus;
-          drivers = status.drivers ?? [];
-        }
-
-        return FlutterMap(
-          mapController: mapController,
-          options: MapOptions(
-            initialCenter: currentLocation ?? LatLng(51.5, -0.09),
-            initialZoom: 13,
-            onTap: (tapPos, point) {
-              if (startPoint == null) {
-                context.read<MapBloc>().add(
-                  SelectPointsEvent(startPoint: point),
-                );
-              } else {
-                context.read<MapBloc>().add(
-                  SelectPointsEvent(endPoint: point, startPoint: startPoint),
-                );
-                context.read<MapBloc>().add(GetPathRouteEvent());
-              }
-            },
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-              subdomains: const ['a', 'b', 'c'],
-              userAgentPackageName: 'com.example.map_sample_app',
-            ),
-            MarkerLayer(
-              markers: [
-                Marker(
-                  width: 80,
-                  height: 80,
-                  point: currentLocation ?? LatLng(51.5, -0.09),
-                  child: const Icon(
-                    Icons.location_pin,
-                    color: Colors.red,
-                    size: 40,
-                  ),
-                ),
-                if (startPoint != null)
-                  Marker(
-                    point: startPoint!,
-                    width: 40,
-                    height: 40,
-                    child: Icon(
-                      Icons.flag,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                if (endPoint != null)
-                  Marker(
-                    point: endPoint!,
-                    width: 40,
-                    height: 40,
-                    child: Icon(
-                      Icons.flag,
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-                  ),
-                // Drivers
-                ...drivers.map(
-                  (driver) => Marker(
-                    point: driver.location,
-                    child: const Icon(
-                      Icons.local_taxi,
-                      color: Colors.black,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (routePoints?.isNotEmpty ?? false)
-              PolylineLayer(
-                polylines: [
-                  Polyline(
-                    points: routePoints ?? [],
-                    strokeWidth: 4,
-                    color: Colors.blue,
-                  ),
-                ],
-              ),
-          ],
-        );
-      },
     );
   }
 }

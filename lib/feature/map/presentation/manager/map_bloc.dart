@@ -44,7 +44,7 @@ class MapBloc extends Bloc<MapEvent, MapState> {
 
   FutureOr<void> _addDriver(event, emit) async {
     final userLocation = state.selectPointsStatus?.startPoint;
-
+    // 3 random drivers
     if (userLocation != null) {
       List<DriverModel> drivers = [
         DriverModel(
@@ -58,14 +58,14 @@ class MapBloc extends Bloc<MapEvent, MapState> {
           id: '2',
           location: LatLng(
             userLocation.latitude - 0.04,
-            userLocation.longitude - 0.006,
+            userLocation.longitude - 0.002,
           ),
         ),
         DriverModel(
           id: '3',
           location: LatLng(
             userLocation.latitude + 0.03,
-            userLocation.longitude - 0.005,
+            userLocation.longitude - 0.003,
           ),
         ),
       ];
@@ -91,10 +91,8 @@ class MapBloc extends Bloc<MapEvent, MapState> {
         for (int i = 0; i < routes.length; i++) {
           await Future.delayed(const Duration(milliseconds: 500));
 
-          //  Create a new list (so the state changes each time)
           final updatedDrivers = List<DriverModel>.from(drivers);
 
-          // Update the moving driver
           updatedDrivers[0] = updatedDrivers[0].copyWith(location: routes[i]);
 
           emit(
@@ -114,10 +112,10 @@ class MapBloc extends Bloc<MapEvent, MapState> {
   FutureOr<void> _requestTrip(event, emit) async {
     emit(state.copyWith(newGetAddressStatus: LoadingGetAddress()));
 
-    Either<Failure, AddressModel> sresponse = await convertLattngUsecase({
+    Either<Failure, AddressModel> sResponse = await convertLattngUsecase({
       'point': state.selectPointsStatus?.startPoint,
     });
-    sresponse.fold(
+    sResponse.fold(
       (error) {
         emit(state.copyWith(newGetAddressStatus: FailedGetAddress()));
       },
@@ -125,10 +123,10 @@ class MapBloc extends Bloc<MapEvent, MapState> {
         sourceAddress = data.displayName;
       },
     );
-    Either<Failure, AddressModel> dresponse = await convertLattngUsecase({
+    Either<Failure, AddressModel> dResponse = await convertLattngUsecase({
       'point': state.selectPointsStatus?.endPoint,
     });
-    dresponse.fold(
+    dResponse.fold(
       (error) {
         emit(state.copyWith(newGetAddressStatus: FailedGetAddress()));
       },
