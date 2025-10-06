@@ -20,38 +20,38 @@ class MapBloc extends Bloc<MapEvent, MapState> {
   MapBloc({required this.getRouteUsecase}) : super(MapState()) {
     on<event.GetCurrentLocationEvent>(_getCurrentLocation);
     on<SelectPointsEvent>(_selectPoints);
-    on<GetPathRoute>((event, emit) async {
-      emit(state.copyWith(newGetPathRouteStatus: GetPathRouteLoadingStatus()));
+    on<GetPathRouteEvent>(_getPath);
+  }
 
-      Either<Failure, RoutePathModel> response = await getRouteUsecase({
-        'start': state.selectPointsStatus?.startPoint,
-        'end': state.selectPointsStatus?.endPoint,
-      });
-      response.fold(
-        (error) {
-          emit(
-            state.copyWith(newGetPathRouteStatus: GetPathRouteFailedStatus()),
-          );
-        },
-        (RoutePathModel data) {
-          final cords = (data.routes?[0].geometry?.coordinates ?? []) as List;
-          var routes = cords
-              .map((c) => LatLng(c[1].toDouble(), c[0].toDouble()))
-              .toList();
-          emit(
-            state.copyWith(
-              newGetPathRouteStatus: GetPathRouteSuccessStatus(
-                routePoints: routes,
-              ),
-            ),
-          );
-        },
-      );
+  FutureOr<void> _getPath(event, emit) async {
+    emit(state.copyWith(newGetPathRouteStatus: GetPathRouteLoadingStatus()));
+
+    Either<Failure, RoutePathModel> response = await getRouteUsecase({
+      'start': state.selectPointsStatus?.startPoint,
+      'end': state.selectPointsStatus?.endPoint,
     });
+    response.fold(
+      (error) {
+        emit(state.copyWith(newGetPathRouteStatus: GetPathRouteFailedStatus()));
+      },
+      (RoutePathModel data) {
+        final cords = (data.routes?[0].geometry?.coordinates ?? []) as List;
+        var routes = cords
+            .map((c) => LatLng(c[1].toDouble(), c[0].toDouble()))
+            .toList();
+        emit(
+          state.copyWith(
+            newGetPathRouteStatus: GetPathRouteSuccessStatus(
+              routePoints: routes,
+            ),
+          ),
+        );
+      },
+    );
   }
 
   FutureOr<void> _selectPoints(event, emit) {
-    if (state.selectPointsStatus?.startPoint != null) {
+    if (event.startPoint != null) {
       emit(
         state.copyWith(
           newSelectPointStatus: SelectPointsStatus(
@@ -62,13 +62,26 @@ class MapBloc extends Bloc<MapEvent, MapState> {
         ),
       );
     } else {
-      emit(
-        state.copyWith(
-          newSelectPointStatus: SelectPointsStatus(
-            startPoint: event.startPoint,
+      if (event.startPoint == null) {
+        //RESET data
+        emit(
+          state.copyWith(
+            newSelectPointStatus: SelectPointsStatus(
+              startPoint: null,
+              endPoint: null,
+            ),
+            newGetPathRouteStatus: GetPathRouteSuccessStatus(routePoints: null),
           ),
-        ),
-      );
+        );
+      } else {
+        emit(
+          state.copyWith(
+            newSelectPointStatus: SelectPointsStatus(
+              startPoint: event.startPoint,
+            ),
+          ),
+        );
+      }
     }
   }
 

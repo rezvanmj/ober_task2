@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:task2/feature/map/presentation/manager/status/get_path_status.dart';
 
 import '../../../../core/widgets/failure_widget.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../manager/map_bloc.dart';
 import '../manager/map_event.dart';
 import '../manager/map_state.dart';
-import '../manager/status/get_path_status.dart';
 import '../manager/status/map_status.dart' hide GetPathRouteSuccessStatus;
 import '../widget/search_widget.dart';
 
@@ -51,7 +51,11 @@ class _MapPageState extends State<MapPage> {
       currentLocation = state.currentLocationStatus?.currentLocation;
       startPoint = state.selectPointsStatus?.startPoint;
       endPoint = state.selectPointsStatus?.endPoint;
-      routePoints = state.selectPointsStatus?.routePoints ?? [];
+      if (state.getPathRoute is GetPathRouteSuccessStatus) {
+        var status = state.getPathRoute as GetPathRouteSuccessStatus;
+        routePoints = status.routePoints ?? [];
+      }
+
       return Stack(
         children: [
           _map(),
@@ -149,7 +153,15 @@ class _MapPageState extends State<MapPage> {
                         TextButton(
                           onPressed: () {
                             Navigator.pop(context);
-                            // startSelectingPoints();
+                            startPoint = null;
+                            endPoint = null;
+                            routePoints = [];
+                            context.read<MapBloc>().add(
+                              SelectPointsEvent(
+                                startPoint: null,
+                                endPoint: null,
+                              ),
+                            );
                           },
                           child: const Text('Ok'),
                         ),
@@ -180,7 +192,7 @@ class _MapPageState extends State<MapPage> {
               SelectPointsEvent(endPoint: point, startPoint: startPoint),
             );
 
-            context.read<MapBloc>().add(GetPathRoute());
+            context.read<MapBloc>().add(GetPathRouteEvent());
           }
         },
       ),

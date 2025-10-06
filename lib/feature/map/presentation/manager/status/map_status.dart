@@ -3,6 +3,11 @@ import 'package:latlong2/latlong.dart';
 
 abstract class MapStatus extends Equatable {}
 
+class FailureCurrentLocation extends MapStatus {
+  @override
+  List<Object?> get props => [];
+}
+
 // statuses for selecting points
 class SelectPointsStatus extends MapStatus {
   final LatLng? startPoint;

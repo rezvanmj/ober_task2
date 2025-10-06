@@ -240,9 +240,13 @@ class Geometry {
   }
 
   Geometry.fromJson(dynamic json) {
-    _coordinates = json['coordinates'] != null
-        ? json['coordinates'].cast<num>()
-        : [];
+    if (json['coordinates'] != null) {
+      _coordinates = (json['coordinates'] as List)
+          .map((e) => (e as List).map((v) => v as num).toList())
+          .toList();
+    } else {
+      _coordinates = [];
+    }
     _type = json['type'];
   }
   List<List<num>>? _coordinates;

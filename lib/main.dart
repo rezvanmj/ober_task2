@@ -8,6 +8,8 @@ import 'core/constants/app_theme.dart';
 import 'feature/map/presentation/pages/map_page.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  serviceLocator();
   runApp(const MyApp());
 }
 

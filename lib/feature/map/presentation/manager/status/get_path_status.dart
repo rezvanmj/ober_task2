@@ -3,12 +3,6 @@ import 'package:latlong2/latlong.dart';
 
 abstract class GetPathStatusStatus extends Equatable {}
 
-class FailureCurrentLocation extends GetPathStatusStatus {
-  @override
-  // TODO: implement props
-  List<Object?> get props => [];
-}
-
 // Statuses for getting rout
 class GetPathRouteSuccessStatus extends GetPathStatusStatus {
   final List<LatLng>? routePoints;

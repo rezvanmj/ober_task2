@@ -24,7 +24,7 @@ class SelectPointsEvent extends MapEvent {
   List<Object?> get props => [startPoint, endPoint];
 }
 
-class GetPathRoute extends MapEvent {
+class GetPathRouteEvent extends MapEvent {
   @override
   List<Object?> get props => [];
 }
