@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -48,7 +46,12 @@ class _MapPageState extends State<MapPage> {
       builder: (context, state) {
         // currentLocation = state.
         return Scaffold(
-          body: _body(context, state),
+          body: GestureDetector(
+            onTap: () {
+              FocusScope.of(context).unfocus();
+            },
+            child: _body(context, state),
+          ),
           // floatingActionButton:,
         );
       },
@@ -92,7 +95,7 @@ class _MapPageState extends State<MapPage> {
                   mapController: mapController ?? MapController(),
                   currentLocation: currentLocation ?? LatLng(0.0, 0.0),
                   searchController: searchController,
-                  isSelectedPoints: startPoint != null && endPoint != null,
+                  // isSelectedPoints: startPoint != null && endPoint != null,
                 ),
 
                 SizedBox(height: 260, child: _searchResult(context, state)),
@@ -108,7 +111,6 @@ class _MapPageState extends State<MapPage> {
 
   Widget _searchResult(BuildContext context, MapState state) {
     if (state.searchAddressStatus is SearchAddressSuccess) {
-      log('hllooooooooo');
       var status = state.searchAddressStatus as SearchAddressSuccess;
       List<AddressModel>? addresses = status.searchedAddresses ?? [];
 
@@ -179,12 +181,14 @@ class _MapPageState extends State<MapPage> {
               LatLng point = LatLng(lat, lng);
               context.read<MapBloc>().add(SelectPointsEvent(startPoint: point));
               mapController?.move(point, 15);
+              context.read<MapBloc>().add(SearchAddressEvent());
             } else if (endPoint == null && startPoint != null) {
               LatLng point = LatLng(lat, lng);
               context.read<MapBloc>().add(
                 SelectPointsEvent(endPoint: point, startPoint: startPoint),
               );
               mapController?.move(point, 15);
+              context.read<MapBloc>().add(SearchAddressEvent());
             }
           },
           child: _addressItem(addresses, index),
@@ -202,7 +206,7 @@ class _MapPageState extends State<MapPage> {
             '${addresses[index].address?.country ?? ''} ${addresses[index].address?.state ?? ''} ${addresses[index].address?.city ?? ''}',
           ),
         ),
-        Divider(),
+        Divider(thickness: 0.2),
       ],
     );
   }

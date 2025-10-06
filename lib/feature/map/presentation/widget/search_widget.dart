@@ -15,12 +15,12 @@ class SearchWidget extends StatelessWidget {
     required this.currentLocation,
     required this.searchController,
     required this.mapController,
-    required this.isSelectedPoints,
+    // required this.isSelectedPoints,
   });
   final TextEditingController searchController;
   final MapController mapController;
   final LatLng currentLocation;
-  final bool isSelectedPoints;
+  // final bool isSelectedPoints;
   @override
   Widget build(BuildContext context) {
     Timer? debounce;
@@ -33,19 +33,16 @@ class SearchWidget extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: AppTextField(
                 onChanged: (value) {
-                  if (isSelectedPoints) {
-                  } else {
-                    if (debounce?.isActive ?? false) debounce?.cancel();
-                    debounce = Timer(const Duration(milliseconds: 900), () {
-                      if (value.length >= 4) {
-                        context.read<MapBloc>().add(
-                          SearchAddressEvent(query: value),
-                        );
-                      }
-                    });
-                    if (value.length < 2) {
-                      context.read<MapBloc>().add(SearchAddressEvent());
+                  if (debounce?.isActive ?? false) debounce?.cancel();
+                  debounce = Timer(const Duration(milliseconds: 900), () {
+                    if (value.length >= 4) {
+                      context.read<MapBloc>().add(
+                        SearchAddressEvent(query: value),
+                      );
                     }
+                  });
+                  if (value.length < 2) {
+                    context.read<MapBloc>().add(SearchAddressEvent());
                   }
                 },
                 hint: 'Search',

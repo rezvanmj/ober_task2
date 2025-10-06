@@ -50,8 +50,8 @@ class MapBloc extends Bloc<MapEvent, MapState> {
         DriverModel(
           id: '1',
           location: LatLng(
-            userLocation.latitude + 0.005,
-            userLocation.longitude + 0.005,
+            userLocation.latitude + 0.009,
+            userLocation.longitude + 0.009,
           ),
         ),
         DriverModel(

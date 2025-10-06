@@ -17,6 +17,11 @@ The project leverages **Bloc** for state management and **Clean Architecture** .
 
 ---
 
+- I use OSM to handle all map-related data: searching addresses, converting latitude/longitude to human-readable addresses (reverse geocoding), and retrieving routes between two coordinates. This enables accurate location selection, distance calculation, and route drawing for pickup and drop-off points.
+- I set a custom user-agent ("flutter_map_app") when making requests to OSM or routing APIs. This identifies the app to the server, ensures compliance with usage policies, and helps prevent request blocks, while allowing safe and responsible access to map data.
+
+---
+
 ## Features and Packages
 
 ### measuring distance and address
@@ -55,7 +60,7 @@ lib/
 ├── main.dart                  # Entry point
 ├── core/                      # Constants, utilities, and shared widgets
 ├── feature/
-│   └── map_feature/
+│   └── map/
 │       ├── data/              # JSON form data and models
 │       ├── domain/            # Entities and repository interfaces
 │       └── presentation/
