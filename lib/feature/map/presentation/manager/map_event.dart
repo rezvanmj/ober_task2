@@ -49,3 +49,10 @@ class RequestTripEvent extends MapEvent {
   @override
   List<Object?> get props => [];
 }
+
+class InitDriversEvent extends MapEvent {
+  final LatLng? userLocation;
+  InitDriversEvent({this.userLocation});
+  @override
+  List<Object?> get props => [userLocation];
+}

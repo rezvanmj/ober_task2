@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:task2/feature/map/data/model/address_model.dart';
+import 'package:task2/feature/map/data/model/driver_model.dart';
 import 'package:task2/feature/map/data/model/route_path_model.dart';
 import 'package:task2/feature/map/domain/use_cases/convert_lattng_usecase.dart';
 import 'package:task2/feature/map/domain/use_cases/get_route_usecase.dart';
@@ -35,9 +36,81 @@ class MapBloc extends Bloc<MapEvent, MapState> {
     on<SearchAddressEvent>(_searchAddress);
     on<SelectAddressEvent>(_selectAddress);
     on<RequestTripEvent>(_requestTrip);
+    on<InitDriversEvent>(_addDriver);
   }
+
   String? sourceAddress = '';
   String? destinationAddress = '';
+
+  FutureOr<void> _addDriver(event, emit) async {
+    final userLocation = state.selectPointsStatus?.startPoint;
+
+    if (userLocation != null) {
+      List<DriverModel> drivers = [
+        DriverModel(
+          id: '1',
+          location: LatLng(
+            userLocation.latitude + 0.009,
+            userLocation.longitude + 0.005,
+          ),
+        ),
+        DriverModel(
+          id: '2',
+          location: LatLng(
+            userLocation.latitude - 0.04,
+            userLocation.longitude - 0.006,
+          ),
+        ),
+        DriverModel(
+          id: '3',
+          location: LatLng(
+            userLocation.latitude + 0.03,
+            userLocation.longitude - 0.005,
+          ),
+        ),
+      ];
+
+      emit(
+        state.copyWith(
+          newSelectPointStatus: SelectPointsStatus(
+            startPoint: state.selectPointsStatus?.startPoint,
+            endPoint: state.selectPointsStatus?.endPoint,
+            drivers: drivers,
+          ),
+        ),
+      );
+      Either<Failure, RoutePathModel> response = await getRouteUsecase({
+        'start': drivers[0].location,
+        'end': userLocation,
+      });
+      await response.fold((error) async {}, (RoutePathModel data) async {
+        final cords = (data.routes?[0].geometry?.coordinates ?? []) as List;
+        var routes = cords
+            .map((c) => LatLng(c[1].toDouble(), c[0].toDouble()))
+            .toList();
+        for (int i = 0; i < routes.length; i++) {
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          //  Create a new list (so the state changes each time)
+          final updatedDrivers = List<DriverModel>.from(drivers);
+
+          // Update the moving driver
+          updatedDrivers[0] = updatedDrivers[0].copyWith(location: routes[i]);
+
+          emit(
+            state.copyWith(
+              newSelectPointStatus: SelectPointsStatus(
+                startPoint: state.selectPointsStatus?.startPoint,
+                endPoint: state.selectPointsStatus?.endPoint,
+                drivers: updatedDrivers,
+              ),
+            ),
+          );
+        }
+      });
+    }
+  }
+
   FutureOr<void> _requestTrip(event, emit) async {
     emit(state.copyWith(newGetAddressStatus: LoadingGetAddress()));
 
@@ -147,6 +220,7 @@ class MapBloc extends Bloc<MapEvent, MapState> {
             newSelectPointStatus: SelectPointsStatus(
               startPoint: null,
               endPoint: null,
+              drivers: [],
             ),
             newGetPathRouteStatus: GetPathRouteSuccessStatus(routePoints: null),
           ),

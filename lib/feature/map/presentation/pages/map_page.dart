@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:task2/core/constants/app_dimensions.dart';
 import 'package:task2/core/constants/app_values.dart';
 import 'package:task2/feature/map/data/model/address_model.dart';
+import 'package:task2/feature/map/data/model/driver_model.dart';
 import 'package:task2/feature/map/presentation/manager/status/get_address_status.dart';
 import 'package:task2/feature/map/presentation/manager/status/get_path_status.dart';
 import 'package:task2/feature/map/presentation/manager/status/search_address_status.dart';
@@ -63,17 +64,10 @@ class _MapPageState extends State<MapPage> {
         var status = state.getPathRoute as GetPathRouteSuccessStatus;
         routePoints = status.routePoints ?? [];
       }
-      if (state.getAddressStatus is SuccessGetAddress) {
-        sourceAddress =
-            (state.getAddressStatus as SuccessGetAddress).sourceAddress ?? '';
-        destinationAddress =
-            (state.getAddressStatus as SuccessGetAddress).destinationAddress ??
-            '';
-      }
 
       return Stack(
         children: [
-          _map(),
+          _map(state),
           Positioned(
             bottom: 20,
             left: 20,
@@ -260,6 +254,14 @@ class _MapPageState extends State<MapPage> {
             },
             listener: (BuildContext context, state) {
               if (state.getAddressStatus is SuccessGetAddress) {
+                sourceAddress =
+                    (state.getAddressStatus as SuccessGetAddress)
+                        .sourceAddress ??
+                    '';
+                destinationAddress =
+                    (state.getAddressStatus as SuccessGetAddress)
+                        .destinationAddress ??
+                    '';
                 showDialog(
                   context: context,
                   builder: (context) {
@@ -342,20 +344,41 @@ class _MapPageState extends State<MapPage> {
               Text(destinationAddress ?? ''),
             ],
           ),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                startPoint = null;
-                endPoint = null;
-                routePoints = [];
-                context.read<MapBloc>().add(
-                  SelectPointsEvent(startPoint: null, endPoint: null),
-                );
-              },
-              child: Text('OK'),
-            ),
+          AppSpace(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Align(
+                alignment: Alignment.bottomRight,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    startPoint = null;
+                    endPoint = null;
+                    routePoints = [];
+                    context.read<MapBloc>().add(
+                      SelectPointsEvent(startPoint: null, endPoint: null),
+                    );
+                  },
+                  child: Text(
+                    'Reset',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(color: Colors.red),
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    context.read<MapBloc>().add(InitDriversEvent());
+                  },
+                  child: Text('Confirm Ride'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -388,75 +411,97 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  Widget _map() {
-    return FlutterMap(
-      mapController: mapController,
-      options: MapOptions(
-        initialCenter: currentLocation ?? LatLng(51.5, -0.09),
-        initialZoom: 13,
-        onTap: (tapPos, point) {
-          if (startPoint == null) {
-            context.read<MapBloc>().add(SelectPointsEvent(startPoint: point));
-          } else {
-            context.read<MapBloc>().add(
-              SelectPointsEvent(endPoint: point, startPoint: startPoint),
-            );
+  Widget _map(MapState state) {
+    return BlocBuilder<MapBloc, MapState>(
+      builder: (context, state) {
+        List<DriverModel> drivers = [];
+        if (state.selectPointsStatus is SelectPointsStatus) {
+          var status = state.selectPointsStatus as SelectPointsStatus;
+          drivers = status.drivers ?? [];
+        }
 
-            context.read<MapBloc>().add(GetPathRouteEvent());
-          }
-        },
-      ),
-      children: [
-        TileLayer(
-          urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          subdomains: const ['a', 'b', 'c'],
-          userAgentPackageName: 'com.example.map_sample_app',
-        ),
-        MarkerLayer(
-          markers: [
-            Marker(
-              width: 80,
-              height: 80,
-              point: currentLocation ?? LatLng(51.5, -0.09),
-              child: const Icon(
-                Icons.location_pin,
-                color: Colors.red,
-                size: 40,
-              ),
+        return FlutterMap(
+          mapController: mapController,
+          options: MapOptions(
+            initialCenter: currentLocation ?? LatLng(51.5, -0.09),
+            initialZoom: 13,
+            onTap: (tapPos, point) {
+              if (startPoint == null) {
+                context.read<MapBloc>().add(
+                  SelectPointsEvent(startPoint: point),
+                );
+              } else {
+                context.read<MapBloc>().add(
+                  SelectPointsEvent(endPoint: point, startPoint: startPoint),
+                );
+                context.read<MapBloc>().add(GetPathRouteEvent());
+              }
+            },
+          ),
+          children: [
+            TileLayer(
+              urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+              subdomains: const ['a', 'b', 'c'],
+              userAgentPackageName: 'com.example.map_sample_app',
             ),
-            if (startPoint != null)
-              Marker(
-                point: startPoint!,
-                width: 40,
-                height: 40,
-                child: Icon(
-                  Icons.flag,
-                  color: Theme.of(context).colorScheme.primary,
+            MarkerLayer(
+              markers: [
+                Marker(
+                  width: 80,
+                  height: 80,
+                  point: currentLocation ?? LatLng(51.5, -0.09),
+                  child: const Icon(
+                    Icons.location_pin,
+                    color: Colors.red,
+                    size: 40,
+                  ),
                 ),
-              ),
-            if (endPoint != null)
-              Marker(
-                point: endPoint!,
-                width: 40,
-                height: 40,
-                child: Icon(
-                  Icons.flag,
-                  color: Theme.of(context).colorScheme.secondary,
+                if (startPoint != null)
+                  Marker(
+                    point: startPoint!,
+                    width: 40,
+                    height: 40,
+                    child: Icon(
+                      Icons.flag,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                if (endPoint != null)
+                  Marker(
+                    point: endPoint!,
+                    width: 40,
+                    height: 40,
+                    child: Icon(
+                      Icons.flag,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                  ),
+                // Drivers
+                ...drivers.map(
+                  (driver) => Marker(
+                    point: driver.location,
+                    child: const Icon(
+                      Icons.local_taxi,
+                      color: Colors.black,
+                      size: 20,
+                    ),
+                  ),
                 ),
+              ],
+            ),
+            if (routePoints?.isNotEmpty ?? false)
+              PolylineLayer(
+                polylines: [
+                  Polyline(
+                    points: routePoints ?? [],
+                    strokeWidth: 4,
+                    color: Colors.blue,
+                  ),
+                ],
               ),
           ],
-        ),
-        if (routePoints?.isNotEmpty ?? false)
-          PolylineLayer(
-            polylines: [
-              Polyline(
-                points: routePoints ?? [],
-                strokeWidth: 4,
-                color: Colors.blue,
-              ),
-            ],
-          ),
-      ],
+        );
+      },
     );
   }
 }
