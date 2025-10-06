@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -106,6 +108,7 @@ class _MapPageState extends State<MapPage> {
 
   Widget _searchResult(BuildContext context, MapState state) {
     if (state.searchAddressStatus is SearchAddressSuccess) {
+      log('hllooooooooo');
       var status = state.searchAddressStatus as SearchAddressSuccess;
       List<AddressModel>? addresses = status.searchedAddresses ?? [];
 
