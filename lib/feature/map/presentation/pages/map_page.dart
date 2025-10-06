@@ -5,9 +5,11 @@ import 'package:latlong2/latlong.dart';
 import 'package:task2/core/constants/app_dimensions.dart';
 import 'package:task2/core/constants/app_values.dart';
 import 'package:task2/feature/map/data/model/address_model.dart';
+import 'package:task2/feature/map/presentation/manager/status/get_address_status.dart';
 import 'package:task2/feature/map/presentation/manager/status/get_path_status.dart';
 import 'package:task2/feature/map/presentation/manager/status/search_address_status.dart';
 
+import '../../../../core/widgets/app_space.dart';
 import '../../../../core/widgets/failure_widget.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../manager/map_bloc.dart';
@@ -30,6 +32,8 @@ class _MapPageState extends State<MapPage> {
   LatLng? startPoint;
   LatLng? endPoint;
   List<LatLng>? routePoints;
+  String? sourceAddress;
+  String? destinationAddress;
 
   final Distance _determinedDistance = Distance();
 
@@ -59,6 +63,13 @@ class _MapPageState extends State<MapPage> {
         var status = state.getPathRoute as GetPathRouteSuccessStatus;
         routePoints = status.routePoints ?? [];
       }
+      if (state.getAddressStatus is SuccessGetAddress) {
+        sourceAddress =
+            (state.getAddressStatus as SuccessGetAddress).sourceAddress ?? '';
+        destinationAddress =
+            (state.getAddressStatus as SuccessGetAddress).destinationAddress ??
+            '';
+      }
 
       return Stack(
         children: [
@@ -68,7 +79,7 @@ class _MapPageState extends State<MapPage> {
             left: 20,
             right: 20,
             child: (endPoint != null && startPoint != null)
-                ? SafeArea(child: _distance(context))
+                ? SafeArea(child: _distance(context, state))
                 : SafeArea(child: _selectLocationButton()),
           ),
           SafeArea(
@@ -219,93 +230,161 @@ class _MapPageState extends State<MapPage> {
     return _determinedDistance.as(LengthUnit.Kilometer, startPoint!, endPoint!);
   }
 
-  Widget _distance(BuildContext context) {
+  Widget _distance(BuildContext context, MapState state) {
     final distance = getDistanceInKm();
     if (distance == null) return const SizedBox.shrink();
     const double baseFare = 2.0;
     const double farePerKm = 1.5;
 
     double fare = baseFare + (distance * farePerKm);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Distance: ${distance.toStringAsFixed(2)} KM',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                'Fare: €${fare.toStringAsFixed(2)}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
+        _tripInfo(distance, fare),
         const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  textStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+        _requestButton(context, state),
+      ],
+    );
+  }
+
+  Widget _requestButton(BuildContext context, MapState state) {
+    return Row(
+      children: [
+        Expanded(
+          child: BlocListener<MapBloc, MapState>(
+            listenWhen: (previous, current) {
+              // Only trigger listener when the state changes to SuccessGetAddress
+              return current.getAddressStatus is SuccessGetAddress &&
+                  previous.getAddressStatus != current.getAddressStatus;
+            },
+            listener: (BuildContext context, state) {
+              if (state.getAddressStatus is SuccessGetAddress) {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return Dialog(child: _tripInfoDialog(context));
+                  },
+                );
+              }
+            },
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Request'),
-                      content: const Text('Success'),
-                      actions: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            startPoint = null;
-                            endPoint = null;
-                            routePoints = [];
-                            context.read<MapBloc>().add(
-                              SelectPointsEvent(
-                                startPoint: null,
-                                endPoint: null,
-                              ),
-                            );
-                          },
-                          child: const Text('Ok'),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onPressed: () {
+                context.read<MapBloc>().add(RequestTripEvent());
+              },
+              child: state.getAddressStatus is LoadingGetAddress
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Request Trip'),
+                        AppSpace(width: 5),
+                        SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(color: Colors.white),
                         ),
                       ],
-                    ),
-                  );
-                },
-                child: const Text('Request'),
-              ),
+                    )
+                  : const Text('Request Trip'),
             ),
-          ],
+          ),
         ),
       ],
+    );
+  }
+
+  Padding _tripInfoDialog(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Trip Requested Successfully',
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          AppSpace(height: 40),
+          Wrap(
+            children: [
+              Text(
+                'Source Address : ',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              Text(sourceAddress ?? ''),
+            ],
+          ),
+
+          AppSpace(height: 20),
+          Wrap(
+            children: [
+              Text(
+                'Destination Address : ',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              Text(destinationAddress ?? ''),
+            ],
+          ),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                startPoint = null;
+                endPoint = null;
+                routePoints = [];
+                context.read<MapBloc>().add(
+                  SelectPointsEvent(startPoint: null, endPoint: null),
+                );
+              },
+              child: Text('OK'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Container _tripInfo(double distance, double fare) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Distance: ${distance.toStringAsFixed(2)} KM',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            'Fare: €${fare.toStringAsFixed(2)}',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
     );
   }
 

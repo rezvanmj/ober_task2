@@ -45,4 +45,19 @@ class MapRepositoryImpl extends MapRepository {
       return Left(ServerFailure(error: error));
     }
   }
+
+  @override
+  Future<Either<Failure, AddressModel>> getAddress({
+    required LatLng point,
+  }) async {
+    try {
+      Response response = await remoteData.getAddress(point);
+
+      AddressModel address = AddressModel.fromJson(response.data);
+
+      return Right(address);
+    } on ServerException catch (error) {
+      return Left(ServerFailure(error: error));
+    }
+  }
 }

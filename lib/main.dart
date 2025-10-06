@@ -19,9 +19,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (BuildContext context) =>
-          MapBloc(getRouteUsecase: locator(), searchLocationUsecase: locator())
-            ..add(GetCurrentLocationEvent()),
+      create: (BuildContext context) => MapBloc(
+        getRouteUsecase: locator(),
+        searchLocationUsecase: locator(),
+        convertLattngUsecase: locator(),
+      )..add(GetCurrentLocationEvent()),
       child: MaterialApp(
         title: 'Ober',
         debugShowCheckedModeBanner: false,

@@ -43,3 +43,9 @@ class SelectAddressEvent extends MapEvent {
   @override
   List<Object?> get props => [selectedAddress];
 }
+
+class RequestTripEvent extends MapEvent {
+  RequestTripEvent();
+  @override
+  List<Object?> get props => [];
+}

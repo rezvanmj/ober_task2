@@ -13,4 +13,6 @@ abstract class MapRepository {
   Future<Either<Failure, List<AddressModel>>> searchAddress({
     required String query,
   });
+
+  Future<Either<Failure, AddressModel>> getAddress({required LatLng point});
 }

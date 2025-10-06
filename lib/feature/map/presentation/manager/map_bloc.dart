@@ -6,8 +6,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:task2/feature/map/data/model/address_model.dart';
 import 'package:task2/feature/map/data/model/route_path_model.dart';
+import 'package:task2/feature/map/domain/use_cases/convert_lattng_usecase.dart';
 import 'package:task2/feature/map/domain/use_cases/get_route_usecase.dart';
 import 'package:task2/feature/map/domain/use_cases/search_location_usecase.dart';
+import 'package:task2/feature/map/presentation/manager/status/get_address_status.dart';
 import 'package:task2/feature/map/presentation/manager/status/get_path_status.dart';
 import 'package:task2/feature/map/presentation/manager/status/map_status.dart';
 import 'package:task2/feature/map/presentation/manager/status/search_address_status.dart';
@@ -20,14 +22,55 @@ import 'map_state.dart';
 class MapBloc extends Bloc<MapEvent, MapState> {
   GetRouteUsecase getRouteUsecase;
   SearchLocationUsecase searchLocationUsecase;
+  ConvertLattngUsecase convertLattngUsecase;
 
-  MapBloc({required this.getRouteUsecase, required this.searchLocationUsecase})
-    : super(MapState()) {
+  MapBloc({
+    required this.getRouteUsecase,
+    required this.searchLocationUsecase,
+    required this.convertLattngUsecase,
+  }) : super(MapState()) {
     on<event.GetCurrentLocationEvent>(_getCurrentLocation);
     on<SelectPointsEvent>(_selectPoints);
     on<GetPathRouteEvent>(_getPath);
     on<SearchAddressEvent>(_searchAddress);
     on<SelectAddressEvent>(_selectAddress);
+    on<RequestTripEvent>(_requestTrip);
+  }
+  String? sourceAddress = '';
+  String? destinationAddress = '';
+  FutureOr<void> _requestTrip(event, emit) async {
+    emit(state.copyWith(newGetAddressStatus: LoadingGetAddress()));
+
+    Either<Failure, AddressModel> sresponse = await convertLattngUsecase({
+      'point': state.selectPointsStatus?.startPoint,
+    });
+    sresponse.fold(
+      (error) {
+        emit(state.copyWith(newGetAddressStatus: FailedGetAddress()));
+      },
+      (AddressModel data) {
+        sourceAddress = data.displayName;
+      },
+    );
+    Either<Failure, AddressModel> dresponse = await convertLattngUsecase({
+      'point': state.selectPointsStatus?.endPoint,
+    });
+    dresponse.fold(
+      (error) {
+        emit(state.copyWith(newGetAddressStatus: FailedGetAddress()));
+      },
+      (AddressModel data) {
+        destinationAddress = data.displayName;
+      },
+    );
+    emit(
+      state.copyWith(
+        newGetAddressStatus: SuccessGetAddress(
+          sourceAddress: sourceAddress,
+          destinationAddress: destinationAddress,
+        ),
+      ),
+    );
   }
 
   FutureOr<void> _selectAddress(event, emit) {

@@ -17,4 +17,11 @@ class MapRemoteData {
     );
     return res;
   }
+
+  Future<dynamic> getAddress(LatLng point) async {
+    Response res = await ApiProvider().get(
+      'https://nominatim.openstreetmap.org/reverse?lat=${point.latitude}&lon=${point.longitude}&format=json',
+    );
+    return res;
+  }
 }
