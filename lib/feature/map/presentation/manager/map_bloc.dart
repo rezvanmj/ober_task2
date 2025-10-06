@@ -4,10 +4,13 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:task2/feature/map/data/model/address_model.dart';
 import 'package:task2/feature/map/data/model/route_path_model.dart';
 import 'package:task2/feature/map/domain/use_cases/get_route_usecase.dart';
+import 'package:task2/feature/map/domain/use_cases/search_location_usecase.dart';
 import 'package:task2/feature/map/presentation/manager/status/get_path_status.dart';
 import 'package:task2/feature/map/presentation/manager/status/map_status.dart';
+import 'package:task2/feature/map/presentation/manager/status/search_address_status.dart';
 
 import '../../../../core/exceptions/failure.dart';
 import 'map_event.dart' as event;
@@ -16,11 +19,51 @@ import 'map_state.dart';
 
 class MapBloc extends Bloc<MapEvent, MapState> {
   GetRouteUsecase getRouteUsecase;
+  SearchLocationUsecase searchLocationUsecase;
 
-  MapBloc({required this.getRouteUsecase}) : super(MapState()) {
+  MapBloc({required this.getRouteUsecase, required this.searchLocationUsecase})
+    : super(MapState()) {
     on<event.GetCurrentLocationEvent>(_getCurrentLocation);
     on<SelectPointsEvent>(_selectPoints);
     on<GetPathRouteEvent>(_getPath);
+    on<SearchAddressEvent>(_searchAddress);
+    on<SelectAddressEvent>(_selectAddress);
+  }
+
+  FutureOr<void> _selectAddress(event, emit) {
+    emit(
+      state.copyWith(
+        newSearchAddressStatus: SearchAddressSuccess(
+          searchedAddresses: (state.searchAddressStatus as SearchAddressSuccess)
+              .searchedAddresses,
+          selectedAddress: event.selectedAddress,
+        ),
+      ),
+    );
+  }
+
+  FutureOr<void> _searchAddress(event, emit) async {
+    if (event.query == null || event.query == '') {
+      emit(state.copyWith(newSearchAddressStatus: SearchAddressInit()));
+    } else {
+      emit(state.copyWith(newSearchAddressStatus: SearchAddressLoading()));
+      Either<Failure, List<AddressModel>> response =
+          await searchLocationUsecase({'query': event.query});
+      response.fold(
+        (error) {
+          emit(state.copyWith(newSearchAddressStatus: SearchAddressFailed()));
+        },
+        (List<AddressModel> data) {
+          emit(
+            state.copyWith(
+              newSearchAddressStatus: SearchAddressSuccess(
+                searchedAddresses: data,
+              ),
+            ),
+          );
+        },
+      );
+    }
   }
 
   FutureOr<void> _getPath(event, emit) async {

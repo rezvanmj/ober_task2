@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:task2/feature/map/data/model/address_model.dart';
 
 @immutable
 abstract class MapEvent extends Equatable {}
@@ -29,11 +30,16 @@ class GetPathRouteEvent extends MapEvent {
   List<Object?> get props => [];
 }
 
-// class ChangeFormValues extends DynamicFormEvent {
-//   //all of form values
-//   final Map<String, dynamic>? formValues;
-//
-//   ChangeFormValues({this.formValues});
-//   @override
-//   List<Object?> get props => [formValues];
-// }
+class SearchAddressEvent extends MapEvent {
+  final String? query;
+  SearchAddressEvent({this.query});
+  @override
+  List<Object?> get props => [query];
+}
+
+class SelectAddressEvent extends MapEvent {
+  final AddressModel? selectedAddress;
+  SelectAddressEvent({this.selectedAddress});
+  @override
+  List<Object?> get props => [selectedAddress];
+}

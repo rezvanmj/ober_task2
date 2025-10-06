@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -19,6 +21,7 @@ class SearchWidget extends StatelessWidget {
   final LatLng currentLocation;
   @override
   Widget build(BuildContext context) {
+    Timer? _debounce;
     return Align(
       alignment: Alignment.topRight,
       child: Row(
@@ -27,6 +30,19 @@ class SearchWidget extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: AppTextField(
+                onChanged: (value) {
+                  if (_debounce?.isActive ?? false) _debounce?.cancel();
+                  _debounce = Timer(const Duration(milliseconds: 500), () {
+                    if (value.length >= 4) {
+                      context.read<MapBloc>().add(
+                        SearchAddressEvent(query: value),
+                      );
+                    }
+                  });
+                  if (value.length < 2) {
+                    context.read<MapBloc>().add(SearchAddressEvent());
+                  }
+                },
                 hint: 'Search',
                 label: 'Search',
                 controller: searchController,

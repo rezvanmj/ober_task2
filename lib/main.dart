@@ -16,12 +16,12 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (BuildContext context) =>
-          MapBloc(getRouteUsecase: locator())..add(GetCurrentLocationEvent()),
+          MapBloc(getRouteUsecase: locator(), searchLocationUsecase: locator())
+            ..add(GetCurrentLocationEvent()),
       child: MaterialApp(
         title: 'Ober',
         debugShowCheckedModeBanner: false,

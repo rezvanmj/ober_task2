@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:task2/core/constants/app_dimensions.dart';
+import 'package:task2/core/constants/app_values.dart';
+import 'package:task2/feature/map/data/model/address_model.dart';
 import 'package:task2/feature/map/presentation/manager/status/get_path_status.dart';
+import 'package:task2/feature/map/presentation/manager/status/search_address_status.dart';
 
 import '../../../../core/widgets/failure_widget.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../manager/map_bloc.dart';
 import '../manager/map_event.dart';
 import '../manager/map_state.dart';
-import '../manager/status/map_status.dart' hide GetPathRouteSuccessStatus;
+import '../manager/status/map_status.dart';
 import '../widget/search_widget.dart';
 
 class MapPage extends StatefulWidget {
@@ -55,7 +59,15 @@ class _MapPageState extends State<MapPage> {
         var status = state.getPathRoute as GetPathRouteSuccessStatus;
         routePoints = status.routePoints ?? [];
       }
-
+      if (state.searchAddressStatus is SearchAddressSuccess) {
+        var status = state.searchAddressStatus as SearchAddressSuccess;
+        if (status.selectedAddress != null) {
+          String country = status.selectedAddress?.address?.country ?? '';
+          String state = status.selectedAddress?.address?.state ?? '';
+          String city = status.selectedAddress?.address?.city ?? '';
+          searchController.text = '$country , $state , $city';
+        }
+      }
       return Stack(
         children: [
           _map(),
@@ -68,10 +80,17 @@ class _MapPageState extends State<MapPage> {
                 : SafeArea(child: _selectLocationButton()),
           ),
           SafeArea(
-            child: SearchWidget(
-              mapController: mapController ?? MapController(),
-              currentLocation: currentLocation ?? LatLng(0.0, 0.0),
-              searchController: searchController,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SearchWidget(
+                  mapController: mapController ?? MapController(),
+                  currentLocation: currentLocation ?? LatLng(0.0, 0.0),
+                  searchController: searchController,
+                ),
+
+                Expanded(child: _searchResult(context, state)),
+              ],
             ),
           ),
         ],
@@ -79,6 +98,88 @@ class _MapPageState extends State<MapPage> {
     } else {
       return LoadingWidget();
     }
+  }
+
+  Widget _searchResult(BuildContext context, MapState state) {
+    if (state.searchAddressStatus is SearchAddressSuccess) {
+      var status = state.searchAddressStatus as SearchAddressSuccess;
+      List<AddressModel>? addresses = status.searchedAddresses ?? [];
+
+      return Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: AppDimensions.horizontalPadding,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.all(
+              Radius.circular(AppDimensions.buttonRadius),
+            ),
+          ),
+          child: addresses.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20.0),
+                  child: Center(child: Text('Nothing found!')),
+                )
+              : _addressList(context, addresses),
+        ),
+      );
+    }
+    if (state.searchAddressStatus is SearchAddressInit) {
+      return SizedBox();
+    }
+    if (state.searchAddressStatus is SearchAddressLoading) {
+      return _loading(context);
+    }
+    return SizedBox();
+  }
+
+  Padding _loading(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDimensions.horizontalPadding,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.all(
+            Radius.circular(AppDimensions.buttonRadius),
+          ),
+        ),
+        child: LoadingWidget(),
+      ),
+    );
+  }
+
+  Widget _addressList(BuildContext context, List<AddressModel> addresses) {
+    return SizedBox(
+      height: AppValues.fullHeight(context) / 2,
+      child: ListView.builder(
+        itemCount: addresses.length,
+        itemBuilder: (context, index) => GestureDetector(
+          onTap: () {
+            context.read<MapBloc>().add(
+              SelectAddressEvent(selectedAddress: addresses[index]),
+            );
+          },
+          child: _addressItem(addresses, index),
+        ),
+      ),
+    );
+  }
+
+  Widget _addressItem(List<AddressModel> addresses, int index) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(
+            '${addresses[index].address?.country},${addresses[index].address?.state},${addresses[index].address?.city}',
+          ),
+        ),
+        Divider(),
+      ],
+    );
   }
 
   Widget _selectLocationButton() {

@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:task2/feature/map/data/repositories/dynamic_form_repository_imp.dart';
 import 'package:task2/feature/map/domain/repositories/map_repository.dart';
 import 'package:task2/feature/map/domain/use_cases/get_route_usecase.dart';
+import 'package:task2/feature/map/domain/use_cases/search_location_usecase.dart';
 
 import '../feature/map/data/data_sources/map_api_provider.dart';
 
@@ -18,5 +19,8 @@ Future<void> serviceLocator() async {
   //usecase
   locator.registerSingleton<GetRouteUsecase>(
     GetRouteUsecase(repository: locator()),
+  );
+  locator.registerSingleton<SearchLocationUsecase>(
+    SearchLocationUsecase(repository: locator()),
   );
 }

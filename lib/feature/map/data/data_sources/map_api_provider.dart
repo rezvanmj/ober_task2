@@ -10,4 +10,11 @@ class MapRemoteData {
     );
     return res;
   }
+
+  Future<dynamic> searchAddress(String query) async {
+    Response res = await ApiProvider().get(
+      'https://nominatim.openstreetmap.org/search?q=$query&format=json&addressdetails=1&limit=5',
+    );
+    return res;
+  }
 }
