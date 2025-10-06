@@ -59,15 +59,7 @@ class _MapPageState extends State<MapPage> {
         var status = state.getPathRoute as GetPathRouteSuccessStatus;
         routePoints = status.routePoints ?? [];
       }
-      if (state.searchAddressStatus is SearchAddressSuccess) {
-        var status = state.searchAddressStatus as SearchAddressSuccess;
-        if (status.selectedAddress != null) {
-          String country = status.selectedAddress?.address?.country ?? '';
-          String state = status.selectedAddress?.address?.state ?? '';
-          String city = status.selectedAddress?.address?.city ?? '';
-          searchController.text = '$country , $state , $city';
-        }
-      }
+
       return Stack(
         children: [
           _map(),
@@ -87,9 +79,10 @@ class _MapPageState extends State<MapPage> {
                   mapController: mapController ?? MapController(),
                   currentLocation: currentLocation ?? LatLng(0.0, 0.0),
                   searchController: searchController,
+                  isSelectedPoints: startPoint != null && endPoint != null,
                 ),
 
-                Expanded(child: _searchResult(context, state)),
+                SizedBox(height: 260, child: _searchResult(context, state)),
               ],
             ),
           ),
@@ -121,7 +114,7 @@ class _MapPageState extends State<MapPage> {
                   padding: const EdgeInsets.symmetric(vertical: 20.0),
                   child: Center(child: Text('Nothing found!')),
                 )
-              : _addressList(context, addresses),
+              : _addressList(context, addresses, state),
         ),
       );
     }
@@ -151,16 +144,34 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  Widget _addressList(BuildContext context, List<AddressModel> addresses) {
+  Widget _addressList(
+    BuildContext context,
+    List<AddressModel> addresses,
+    MapState state,
+  ) {
     return SizedBox(
       height: AppValues.fullHeight(context) / 2,
       child: ListView.builder(
         itemCount: addresses.length,
         itemBuilder: (context, index) => GestureDetector(
           onTap: () {
+            double lat = double.parse(addresses[index].lat ?? '0.0');
+            double lng = double.parse(addresses[index].lon ?? '0.0');
+
             context.read<MapBloc>().add(
               SelectAddressEvent(selectedAddress: addresses[index]),
             );
+            if (startPoint == null) {
+              LatLng point = LatLng(lat, lng);
+              context.read<MapBloc>().add(SelectPointsEvent(startPoint: point));
+              mapController?.move(point, 15);
+            } else if (endPoint == null && startPoint != null) {
+              LatLng point = LatLng(lat, lng);
+              context.read<MapBloc>().add(
+                SelectPointsEvent(endPoint: point, startPoint: startPoint),
+              );
+              mapController?.move(point, 15);
+            }
           },
           child: _addressItem(addresses, index),
         ),
@@ -174,7 +185,7 @@ class _MapPageState extends State<MapPage> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: Text(
-            '${addresses[index].address?.country},${addresses[index].address?.state},${addresses[index].address?.city}',
+            '${addresses[index].address?.country ?? ''} ${addresses[index].address?.state ?? ''} ${addresses[index].address?.city ?? ''}',
           ),
         ),
         Divider(),
@@ -211,7 +222,10 @@ class _MapPageState extends State<MapPage> {
   Widget _distance(BuildContext context) {
     final distance = getDistanceInKm();
     if (distance == null) return const SizedBox.shrink();
+    const double baseFare = 2.0;
+    const double farePerKm = 1.5;
 
+    double fare = baseFare + (distance * farePerKm);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -222,10 +236,26 @@ class _MapPageState extends State<MapPage> {
             borderRadius: BorderRadius.circular(8),
             boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
           ),
-          child: Text(
-            'Distance: ${distance.toStringAsFixed(2)}KM',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Distance: ${distance.toStringAsFixed(2)} KM',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                'Fare: €${fare.toStringAsFixed(2)}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 10),

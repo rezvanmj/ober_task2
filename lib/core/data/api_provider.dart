@@ -56,6 +56,7 @@ class ApiProvider extends ApiProviderInterface {
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
+            'User-Agent': 'flutter_map_app',
           },
         ),
         // options: Options(

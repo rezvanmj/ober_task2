@@ -31,15 +31,7 @@ class MapBloc extends Bloc<MapEvent, MapState> {
   }
 
   FutureOr<void> _selectAddress(event, emit) {
-    emit(
-      state.copyWith(
-        newSearchAddressStatus: SearchAddressSuccess(
-          searchedAddresses: (state.searchAddressStatus as SearchAddressSuccess)
-              .searchedAddresses,
-          selectedAddress: event.selectedAddress,
-        ),
-      ),
-    );
+    emit(state.copyWith(newSearchAddressStatus: SearchAddressInit()));
   }
 
   FutureOr<void> _searchAddress(event, emit) async {
@@ -153,20 +145,4 @@ class MapBloc extends Bloc<MapEvent, MapState> {
       ),
     );
   }
-
-  // Future<void> getRoute() async {
-  //   if (startPoint != null && endPoint != null) {
-  //     final url =
-  //         'https://router.project-osrm.org/route/v1/driving/${startPoint?.longitude},${startPoint?.latitude};${endPoint.value?.longitude},${endPoint.value?.latitude}?overview=full&geometries=geojson';
-  //     final response = await http.get(Uri.parse(url));
-  //
-  //     if (response.statusCode == 200) {
-  //       final data = jsonDecode(response.body);
-  //       final cords = data['routes'][0]['geometry']['coordinates'] as List;
-  //       // routePoints.value = cords
-  //       //     .map((c) => LatLng(c[1].toDouble(), c[0].toDouble()))
-  //       //     .toList();
-  //     }
-  //   }
-  // }
 }
